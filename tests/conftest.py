@@ -5,9 +5,11 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import StaticPool
 
 from viajei_api.app import app
-from viajei_api.models import table_registry
+from viajei_api.database import get_session
+from viajei_api.models import User, table_registry
 
 
 @pytest.fixture
@@ -16,13 +18,24 @@ def mock_db_time():
 
 
 @pytest.fixture
-def client():
-    return TestClient(app)
+def client(session):
+    def get_session_override():
+        return session
+
+    with TestClient(app) as client:
+        app.dependency_overrides[get_session] = get_session_override
+        yield client
+
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
 def session():
-    engine = create_engine("sqlite:///:memory:")
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     table_registry.metadata.create_all(engine)
 
     with Session(engine) as session:
@@ -44,3 +57,14 @@ def _mock_db_time(*, model, time=datetime(2026, 1, 1)):
     yield time
 
     event.remove(model, "before_insert", fake_time_hook)
+
+
+@pytest.fixture
+def user(session):
+    user = User(email="jorge@example.com", password="StrongPassword")
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return user
