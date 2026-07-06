@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
@@ -20,6 +21,22 @@ from viajei_api.security import (
 app = FastAPI()
 
 database = []
+
+origins = [
+    "http://localhost:3000",
+    "htpp://127.0.0.1:3000",
+    "http://localhost:5000",
+    "htpp://127.0.0.1:5000",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
@@ -104,13 +121,13 @@ def retrieve_token(
     if not user:
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
-            detail="Incorrect email or password"
+            detail="Incorrect email or password",
         )
 
     if not verify_password(form_data.password, user.password):
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED,
-            detail="Incorrect email or password"
+            detail="Incorrect email or password",
         )
 
     access_token = create_access_token(data={"sub": user.email})

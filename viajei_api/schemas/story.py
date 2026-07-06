@@ -1,8 +1,8 @@
-from viajei_api.schemas.user import User
+from viajei_api.schemas.user import UserSchema
 
 
 class Story:
     name: str
     title: str
-    email = User.email
+    email = UserSchema.email
     body: str
