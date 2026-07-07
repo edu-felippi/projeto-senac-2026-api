@@ -8,12 +8,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from viajei_api.database import get_session
-from viajei_api.models import User
+from viajei_api.models import Story, User
 from viajei_api.schemas.message import Message
+from viajei_api.schemas.story import StoryPublic, StorySchema
 from viajei_api.schemas.token import Token
 from viajei_api.schemas.user import UserList, UserPublic, UserSchema
 from viajei_api.security import (
     create_access_token,
+    get_current_user,
     get_password_hash,
     verify_password,
 )
@@ -28,7 +30,7 @@ origins = [
     "http://localhost:5000",
     "htpp://127.0.0.1:5000",
     "http://127.0.0.1:5500",
-    "http://localhost:5500"
+    "http://localhost:5500",
 ]
 
 app.add_middleware(
@@ -133,3 +135,23 @@ def retrieve_token(
     access_token = create_access_token(data={"sub": user.email})
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@app.post("/story", status_code=HTTPStatus.CREATED, response_model=StoryPublic)
+def create_story(
+    story: StorySchema,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+
+    new_story = Story(
+        author=story.author, title=story.title, story=story.story
+    )
+
+    new_story.email = user.email
+
+    session.add(new_story)
+    session.commit()
+    session.refresh(new_story)
+
+    return new_story

@@ -1,8 +1,17 @@
-from viajei_api.schemas.user import UserSchema
+from pydantic import BaseModel
 
 
-class Story:
-    name: str
+class StorySchema(BaseModel):
+    author: str
     title: str
-    email = UserSchema.email
-    body: str
+    story: str
+
+
+class StoryDB(StorySchema):
+    id: int
+
+
+class StoryPublic(BaseModel):
+    id: int
+    title: str
+    email: str
